@@ -15,21 +15,23 @@ class ThreadedUdpServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
 
 class UdpHandler(SocketServer.BaseRequestHandler):
   def handle(self):
+    if self.server.bot == None:
+      return
     data = self.request[0]
     self.server.bot.tell(Settings().udp_channel[0],
         Settings().udp_channel[1], data.strip())
 
 class UdpPlugin(Plugin):
-  hooks = ['on_join']
+  hooks = ['timer_beat']
 
   def __init__(self):
     self.thread = None
     self.server = None
     self.bot = None
 
-  def on_join(self, bot, source, channel, network, **kwargs):
+  def timer_beat(self, bot, now, network):
     self.bot = bot
-    self.server.bot = self.bot
+    self.server.bot = bot
 
   def on_load(self):
     self.server = ThreadedUdpServer(
@@ -42,6 +44,8 @@ class UdpPlugin(Plugin):
 
   def on_unload(self):
     self.server.shutdown()
+    self.server.server_close()
+    self.thread.join()
     self.thread = None
 
 if __name__ == "__main__":
@@ -54,5 +58,11 @@ if __name__ == "__main__":
   u.on_load()
   u.on_join(test, None, None, None)
 
-  while True:
-    pass
+  import time
+  time.sleep(1)
+  u.on_unload()
+  u = UdpPlugin()
+  u.on_load()
+  u.on_join(test, None, None, None)
+
+  time.sleep(1)
