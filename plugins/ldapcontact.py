@@ -37,7 +37,7 @@ class LdapcontactCommand(Command):
     return entry[1][key][0] if key in entry[1] else None
 
   def trig_contact(self, bot, source, target, trigger, argument, network):
-    """.contact (user|filter e.g. givenname=david, sn=andersson, o=cisco)"""
+    """.contact (user|filter e.g. givenname=david, sn=ander*, o=cisco)"""
     if Settings().ldap_channels != None and \
       not target in Settings().ldap_channels:
       return "Nah, I don't like this channel that much"
@@ -46,7 +46,11 @@ class LdapcontactCommand(Command):
       return "You have to specify the username or filter as argument"
 
     if '=' in argument:
-      filt = argument.lower()
+      if '*' in argument:
+        filt = argument.lower()
+      else:
+        filt = argument.lower().split('=', 1)
+        filt = filt[0] + '=*' + filt[1] + '*'
     else:
       filt = 'uid=' + argument.lower()
     con = ldap.initialize(Settings().ldap_url)
