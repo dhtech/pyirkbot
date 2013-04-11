@@ -52,11 +52,12 @@ class Logger(Command):
     return None
 
   def trig_logstart(self, bot, source, target, trigger, argument):
+    if Settings().log_svn_channels != None and \
+      not target in Settings().log_svn_channels:
+      return "Nah, I don't like this channel that much"
+
     if target in self.logs:
       return "I'm already logging this channel"
-
-    if not target in Settings().log_svn_channels:
-      return "Nah, I don't like this channel that much"
 
     if not argument or argument == "":
       return "You have to specify the group name as argument"

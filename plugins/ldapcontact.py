@@ -36,21 +36,39 @@ class LdapcontactCommand(Command):
   def _safe_get(self, entry, key):
     return entry[1][key][0] if key in entry[1] else None
 
-  def trig_contact(self, bot, source, target, trigger, argument):
-    if not target in Settings().ldap_channels:
+  def trig_contact(self, bot, source, target, trigger, argument, network):
+    """.contact (user|filter e.g. givenname=david, sn=andersson, o=cisco)"""
+    if Settings().ldap_channels != None and \
+      not target in Settings().ldap_channels:
       return "Nah, I don't like this channel that much"
 
     if not argument or argument == "":
-      return "You have to specify the username as argument"
+      return "You have to specify the username or filter as argument"
 
-    uid = argument.lower()
+    if '=' in argument:
+      filt = argument.lower()
+    else:
+      filt = 'uid=' + argument.lower()
     con = ldap.initialize(Settings().ldap_url)
-    sr = con.search_st(Settings().ldap_base, ldap.SCOPE_SUBTREE, \
-        "uid=" + uid, timeout=1)
-    if not sr:
-      return "Couldn't find that user, sorry :("
+    try:
+      sr = con.search_st(Settings().ldap_base, ldap.SCOPE_SUBTREE, \
+          filt, timeout=1)
+    except:
+      return "LDAP failure, maybe you provided me with an invalid filter?"
+
+    i=0
     for entry in sr:
+      if not 'sn' in  entry[1]:
+        continue
+
+      i=i + 1
+      if i == 6:
+        bot.tell(network, target, ".. and " + str((len(sr) - i)) + \
+            " more result(s)")
+        return None
+
       name = entry[1]['sn'][0] + ", " + entry[1]['givenName'][0]
+      uid = self._safe_get(entry, 'uid')
       email = self._safe_get(entry, 'gosaMailForwardingAddress')
       home =  self._safe_get(entry, 'homePhone')
       work =  self._safe_get(entry, 'telephoneNumber')
@@ -61,7 +79,11 @@ class LdapcontactCommand(Command):
       if work:
         txt = txt + " (" + self._format_phone(work) + ")"
 
-      return txt
+      bot.tell(network, target, txt)
+
+    if i == 0:
+      return "Couldn't find any matching users, sorry :("
+    return None
 
 if __name__ == "__main__":
   l = LdapcontactCommand()
