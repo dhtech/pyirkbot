@@ -41,7 +41,7 @@ class Logger(Command):
     time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     source = source.split('!')[0]
     self.logs[target]["log"].append("%s %s> %s" % (
-      time, source.rjust(16), message))
+      time, source.rjust(16), message.decode("utf-8")))
     self.logs[target]["participants"][source] += 1
     return None
 
@@ -95,11 +95,15 @@ class Logger(Command):
     missing_members -= set(participants)
 
     if group:
-      report.append("- Non-attendees:")
+      report.append("- Non-attendees in '%s':" % (group_name, ))
       report.extend(missing_members)
 
+    # TODO(bluecmd): Oh I hate older Pythons way of handling unicode.
+    # This produces a ISO-8859-1 - don't ask me why.
+    # It's better than the semi-UTF-8 we had by default though.
     tmp = NamedTemporaryFile(delete=False)
-    tmp.write("\n".join(log["log"]))
+    tmp.write("\n".join(
+      [line.encode("raw_unicode_escape") for line in log["log"]]))
     tmp.write("\n");
     tmp.write("\n".join(report));
     tmp.write("\n");
