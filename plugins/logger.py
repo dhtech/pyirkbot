@@ -40,9 +40,15 @@ class Logger(Command):
     # Log it!
     time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     source = source.split('!')[0]
-    self.logs[target]["log"].append("%s %s> %s" % (
-      time, source.rjust(16), message.decode("utf-8")))
-    self.logs[target]["participants"][source] += 1
+    message = message.decode("utf-8")
+
+    if message.startswith(u"\x01ACTION"):
+      line = "%s %s %s ]" % (
+        time, ("[ %s" % source).rjust(16), message[8:-1].strip())
+    else:
+      line = "%s %s> %s" % (time, source.rjust(16), message)
+    self.logs[target]["log"].append(line)
+    self.logs[target]["participants"][source.lower()] += 1
     return None
 
   def trig_logstart(self, bot, source, target, trigger, argument):
