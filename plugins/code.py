@@ -8,7 +8,7 @@ class Code(Command):
 	
 	def trig_code(self, bot, source, target, trigger, argument):
 		""" I'm sorry Dave I can't do that. """
-		return "Hello, I'm riverbot, a pyirkbot based on pynik. My code http://github.com/IcEBnd/pyirkbot For feature requests use http://github.com/IcEBnd/pyirkbot/issues"
+		return "Hello, I'm a pyirkbot based on pynik. My code https://github.com/blueCommand/pyirkbot For feature requests use https://github.com/blueCommand/pyirkbot/issues beer is good also"
 
 	def save(self): 
 		pass

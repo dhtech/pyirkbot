@@ -17,4 +17,4 @@ class GiveCommand(Command):
 			if ret_str:
 				return "%s: %s" % (hilight, ret_str)
 			else:
-				return "Nothing to give :<"
+				return "I'm sorry, Dave. I'm afraid I can't do that."

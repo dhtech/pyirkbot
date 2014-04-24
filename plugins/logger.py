@@ -13,8 +13,10 @@
 # log_svn_time_format = "%Y%m%d"
 # log_svn_teams = [ "access", "team" ]
 
-import pysvn
+import collections
+import grp
 import os
+import pysvn
 from tempfile import NamedTemporaryFile
 from datetime import datetime
 from commands import Command
@@ -23,17 +25,7 @@ from settings import Settings
 class Logger(Command):
   hooks = [ "on_privmsg" ]
   def __init__(self):
-    self.svn = pysvn.Client()
-    self.svn.callback_get_login = self._get_login
-    self.svn.callback_ssl_server_trust_prompt = self._ssl_trust
     self.logs = {}
-
-  def _get_login(self, realm, username, may_save):
-    return True, Settings().log_svn_username, \
-      Settings().log_svn_password, False
-
-  def _ssl_trust(self, trust_dict):
-    return True, 1, True
 
   def on_load(self):
     pass
@@ -47,8 +39,10 @@ class Logger(Command):
 
     # Log it!
     time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    source = source.split('!')[0].rjust(16)
-    self.logs[target]["log"].append(time + " " + source + "> " + message)
+    source = source.split('!')[0]
+    self.logs[target]["log"].append("%s %s> %s" % (
+      time, source.rjust(16), message))
+    self.logs[target]["participants"][source] += 1
     return None
 
   def trig_logstart(self, bot, source, target, trigger, argument):
@@ -69,27 +63,57 @@ class Logger(Command):
 
     time = datetime.now().strftime(Settings().log_svn_time_format)
 
-    self.logs[target] = { "team" : team, "time": time, "log": [] }
+    self.logs[target] = { "team" : team, "time": time, "log": [],
+        "participants": collections.defaultdict(int)}
     return "Logging ..."
 
   def trig_logstop(self, bot, source, target, trigger, argument):
     if not target in self.logs:
       return "Sorry, nobody told me to record this channel :("
 
-    l = self.logs[target]
+    log = self.logs[target]
+    report = []
+    report.append("=== Report ===")
+
+    if log["team"] == "team":
+      group_name = "tech-%s" % (Settings().event(), )
+    else:
+      group_name = "%s-%s" % (log["team"], Settings().event())
+    missing_members = set()
+    group = None
+    try:
+      group = grp.getgrnam(group_name)
+      missing_members = set(group[3])
+    except KeyError:
+      report.append(
+          "(Group named '%s' does not exsist, cannot list non-attendees)" % (
+            group_name, ))
+
+    report.append("- Participants:")
+    participants = sorted(log["participants"])
+    report.extend(participants)
+    missing_members -= set(participants)
+
+    if group:
+      report.append("- Non-attendees:")
+      report.extend(missing_members)
+
     tmp = NamedTemporaryFile(delete=False)
-    tmp.write("\n".join(l["log"]))
+    tmp.write("\n".join(log["log"]))
+    tmp.write("\n");
+    tmp.write("\n".join(report));
+    tmp.write("\n");
     tmp.close()
 
-    url = Settings().log_svn_url(self.svn) % (l["team"], l["time"])
+    url = Settings().log_svn_url() % (log["team"], log["time"])
     try:
-      self.svn.import_ (tmp.name, url,
-	  'IRC auto logger: ' + l["team"] + ' @ ' + l["time"])
+      Settings().svn().import_ (tmp.name, url,
+          'IRC auto logger: ' + log["team"] + ' @ ' + log["time"])
 
       os.unlink(tmp.name)
     except pysvn._pysvn.ClientError as e:
       return "Oops! I failed to upload the log (" + tmp.name + \
-	"), error is: " + str(e)
+        "), error is: " + str(e)
 
     del self.logs[target]
     return "Log uploaded to " + url
