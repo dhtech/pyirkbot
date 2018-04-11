@@ -102,7 +102,7 @@ class Logger(Command):
 
     if group:
       report.append("- Non-attendees in '%s':" % (group_name, ))
-      report.extend(missing_members)
+      report.extend(sorted(missing_members))
 
     # TODO(bluecmd): Oh I hate older Pythons way of handling unicode.
     # This produces a ISO-8859-1 - don't ask me why.
