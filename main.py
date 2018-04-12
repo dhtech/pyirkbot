@@ -6,13 +6,9 @@ import sys
 import pdb
 import gc
 
-try:
-	import settings
-except ImportError:
-	print "---> Please copy settings.sample.py to settings.py and customize it. <---"
-	sys.exit(0)
-
+import settings
 import ircbot
+
 
 bot = ircbot.IRCBot(settings.Settings())
 bot.add_timer(datetime.timedelta(0, 600), True, bot.send_all_networks, "PING :iamabanana")
