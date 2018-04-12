@@ -5,6 +5,7 @@ import pickle
 import sys
 from plugins import Plugin
 import htmlentitydefs
+import konfig
 import re
 import os
 import signal
@@ -123,18 +124,21 @@ def read_url(url):
 	return data
 
 def save_data(name, data):
-	handle = open(os.path.join('data', name + '.txt'), 'w')
-	p = pickle.Pickler(handle)
-	p.dump(data)
-	handle.close()
+   p = pickle.Pickler()
+   data = p.dumps(data)
+   all_data = konfig.configmap('pyirkbot-data').read()
+   all_data[name] = data
+   konfig.configmap('pyirkbot-data').update(all_data)
 
 def load_data(name, default_value=None):
-	try:
-		with open(os.path.join('data', name + '.txt'), 'r') as handle:
-			return pickle.Unpickler(handle).load()
-	except:
-		error_handler.output_message("Could not load data from file 'data/" + str(name) + ".txt' :(")
-		return default_value
+    try:
+        data = konfig.configmap('pyirkbot-data').read().get(name, None)
+        if data is None:
+            return default_value
+        return pickle.Unpickler().loads(data)
+    except:
+        error_handler.output_message("Could not load data from pyirkbot-data :(")
+        return default_value
 
 # FIXME use bot.settings/rebuild authentication
 def has_admin_privileges(source, target):
