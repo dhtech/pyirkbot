@@ -124,8 +124,7 @@ def read_url(url):
 	return data
 
 def save_data(name, data):
-   p = pickle.Pickler()
-   data = p.dumps(data)
+   data = pickle.dumps(data)
    all_data = konfig.configmap('pyirkbot-data').read()
    all_data[name] = data
    konfig.configmap('pyirkbot-data').update(all_data)
@@ -135,7 +134,7 @@ def load_data(name, default_value=None):
         data = konfig.configmap('pyirkbot-data').read().get(name, None)
         if data is None:
             return default_value
-        return pickle.Unpickler().loads(data)
+        return pickle.loads(data)
     except:
         error_handler.output_message("Could not load data from pyirkbot-data :(")
         return default_value
