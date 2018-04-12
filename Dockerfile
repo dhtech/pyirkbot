@@ -3,7 +3,7 @@ FROM debian:testing
 RUN apt-get update; \
   DEBIAN_FRONTEND=noninteractive apt-get install -y dumb-init \
   python python-svn python-simplejson python-ldap \
-  python-pip ca-certificates
+  python-pip python-requests ca-certificates
 
 RUN pip install python-konfig
 
